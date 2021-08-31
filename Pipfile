@@ -5,9 +5,6 @@ name = "pypi"
 
 [packages]
 numpy = "*"
-nltk = "*"
-inflect = "*"
-distance = "*"
 
 [dev-packages]
 autopep8 = "*"

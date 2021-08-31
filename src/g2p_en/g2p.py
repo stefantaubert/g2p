@@ -4,53 +4,10 @@
 By kyubyong park(kbpark.linguist@gmail.com) and Jongseok Kim(https://github.com/ozmig77)
 https://www.github.com/kyubyong/g2p
 '''
-from g2p_en.expand import normalize_numbers
-import numpy as np
-from builtins import str as unicode
-import unicodedata
-import re
 import os
-import codecs
-import nltk
-from nltk import pos_tag
-from nltk.corpus import cmudict
-from nltk.tokenize import TweetTokenizer
+from typing import List
 
-word_tokenize = TweetTokenizer().tokenize
-
-
-try:
-  nltk.data.find('taggers/averaged_perceptron_tagger.zip')
-except LookupError:
-  nltk.download('averaged_perceptron_tagger')
-try:
-  nltk.data.find('corpora/cmudict.zip')
-except LookupError:
-  nltk.download('cmudict')
-
-dirname = os.path.dirname(__file__)
-
-
-def construct_homograph_dictionary():
-  f = os.path.join(dirname, 'homographs.en')
-  homograph2features = dict()
-  for line in codecs.open(f, 'r', 'utf8').read().splitlines():
-    if line.startswith("#"):
-      continue  # comment
-    headword, pron1, pron2, pos1 = line.strip().split("|")
-    homograph2features[headword.lower()] = (pron1.split(), pron2.split(), pos1)
-  return homograph2features
-
-# def segment(text):
-#   '''
-#   Splits text into `tokens`.
-#   :param text: A string.
-#   :return: A list of tokens (string).
-#   '''
-#   print(text)
-#   text = re.sub('([.,?!]( |$))', r' \1', text)
-#   print(text)
-#   return text.split()
+import numpy as np
 
 
 class G2p(object):
@@ -67,16 +24,14 @@ class G2p(object):
                                                          'UH0', 'UH1', 'UH2', 'UW',
                                                          'UW0', 'UW1', 'UW2', 'V', 'W', 'Y', 'Z', 'ZH']
     self.g2idx = {g: idx for idx, g in enumerate(self.graphemes)}
-    self.idx2g = {idx: g for idx, g in enumerate(self.graphemes)}
 
     self.p2idx = {p: idx for idx, p in enumerate(self.phonemes)}
     self.idx2p = {idx: p for idx, p in enumerate(self.phonemes)}
 
-    self.cmu = cmudict.dict()
     self.load_variables()
-    self.homograph2features = construct_homograph_dictionary()
 
   def load_variables(self):
+    dirname = os.path.dirname(__file__)
     self.variables = np.load(os.path.join(dirname, 'checkpoint20.npz'))
     self.enc_emb = self.variables["enc_emb"]  # (29, 64). (len(graphemes), emb)
     self.enc_w_ih = self.variables["enc_w_ih"]  # (3*128, 64)
@@ -127,7 +82,7 @@ class G2p(object):
 
     return x
 
-  def predict(self, word):
+  def predict(self, word: str) -> List[str]:
     # encoder
     enc = self.encode(word)
     enc = self.gru(enc, len(word) + 1, self.enc_w_ih, self.enc_w_hh,
@@ -150,51 +105,3 @@ class G2p(object):
 
     preds = [self.idx2p.get(idx, "<unk>") for idx in preds]
     return preds
-
-  def __call__(self, text):
-    # preprocessing
-    text = unicode(text)
-    text = normalize_numbers(text)
-    text = ''.join(char for char in unicodedata.normalize('NFD', text)
-                   if unicodedata.category(char) != 'Mn')  # Strip accents
-    text = text.lower()
-    text = re.sub("[^ a-z'.,?!\-]", "", text)
-    text = text.replace("i.e.", "that is")
-    text = text.replace("e.g.", "for example")
-
-    # tokenization
-    words = word_tokenize(text)
-    tokens = pos_tag(words)  # tuples of (word, tag)
-
-    # steps
-    prons = []
-    for word, pos in tokens:
-      if re.search("[a-z]", word) is None:
-        pron = [word]
-
-      elif word in self.homograph2features:  # Check homograph
-        pron1, pron2, pos1 = self.homograph2features[word]
-        if pos.startswith(pos1):
-          pron = pron1
-        else:
-          pron = pron2
-      elif word in self.cmu:  # lookup CMU dict
-        pron = self.cmu[word][0]
-      else:  # predict for oov
-        pron = self.predict(word)
-
-      prons.extend(pron)
-      prons.extend([" "])
-
-    return prons[:-1]
-
-
-if __name__ == '__main__':
-  texts = ["I have $250 in my pocket.",  # number -> spell-out
-           "popular pets, e.g. cats and dogs",  # e.g. -> for example
-           "I refuse to collect the refuse around here.",  # homograph
-           "I'm an activationist."]  # newly coined word
-  g2p = G2p()
-  for text in texts:
-    out = g2p(text)
-    print(out)
