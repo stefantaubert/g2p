@@ -5,7 +5,7 @@ By kyubyong park(kbpark.linguist@gmail.com) and Jongseok Kim(https://github.com/
 https://www.github.com/kyubyong/g2p
 '''
 import os
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -82,7 +82,7 @@ class G2p(object):
 
     return x
 
-  def predict(self, word: str) -> List[str]:
+  def predict(self, word: str) -> Tuple[str, ...]:
     # encoder
     enc = self.encode(word)
     enc = self.gru(enc, len(word) + 1, self.enc_w_ih, self.enc_w_hh,
@@ -94,7 +94,7 @@ class G2p(object):
     h = last_hidden
 
     preds = []
-    for i in range(20):
+    for _ in range(20):
       h = self.grucell(dec, h, self.dec_w_ih, self.dec_w_hh, self.dec_b_ih, self.dec_b_hh)  # (b, h)
       logits = np.matmul(h, self.fc_w.T) + self.fc_b
       pred = logits.argmax()
@@ -104,4 +104,5 @@ class G2p(object):
       dec = np.take(self.dec_emb, [pred], axis=0)
 
     preds = [self.idx2p.get(idx, "<unk>") for idx in preds]
-    return preds
+    preds_tuple = tuple(preds)
+    return preds_tuple
