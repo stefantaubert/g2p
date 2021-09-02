@@ -5,4 +5,4 @@ __pychache__
 dist
 build
 .vscode/
-src/g2p_en/g2p.debug.py
+*.debug.py
