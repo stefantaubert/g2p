@@ -5,6 +5,7 @@ By kyubyong park(kbpark.linguist@gmail.com) and Jongseok Kim(https://github.com/
 https://www.github.com/kyubyong/g2p
 '''
 import os
+from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
@@ -31,8 +32,8 @@ class G2p(object):
     self.load_variables()
 
   def load_variables(self):
-    dirname = os.path.dirname(__file__)
-    self.variables = np.load(os.path.join(dirname, 'checkpoint20.npz'))
+    dirname = Path(os.path.dirname(__file__))
+    self.variables = np.load(dirname / 'checkpoint20.npz')
     self.enc_emb = self.variables["enc_emb"]  # (29, 64). (len(graphemes), emb)
     self.enc_w_ih = self.variables["enc_w_ih"]  # (3*128, 64)
     self.enc_w_hh = self.variables["enc_w_hh"]  # (3*128, 128)
