@@ -6,3 +6,4 @@ dist
 build
 .vscode/
 *.debug.py
+*.egg-info
