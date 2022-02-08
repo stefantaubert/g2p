@@ -85,6 +85,10 @@ class G2p(object):
 
   def predict(self, word: str) -> Tuple[str, ...]:
     # encoder
+    if len(word) == 0:
+      return ()
+    # only lowercase works
+    word = word.lower()
     enc = self.encode(word)
     enc = self.gru(enc, len(word) + 1, self.enc_w_ih, self.enc_w_hh,
                    self.enc_b_ih, self.enc_b_hh, h0=np.zeros((1, self.enc_w_hh.shape[-1]), np.float32))
