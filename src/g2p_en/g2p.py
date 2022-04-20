@@ -6,7 +6,7 @@ https://www.github.com/kyubyong/g2p
 '''
 import os
 from pathlib import Path
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 
